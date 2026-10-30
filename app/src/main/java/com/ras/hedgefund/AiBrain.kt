@@ -158,13 +158,13 @@ Return your decision as raw JSON only.""".trim()
                 else -> "https://api.openai.com/v1"
             }
             val modelDefault = when (provider) {
-                "gemini" -> "gemini-2.5-flash"
+                "gemini" -> "gemini-3.8-flash"
                 "claude" -> "claude-3-5-haiku-latest"
                 "deepseek" -> "deepseek-chat"
                 "ollama" -> "qwen2.5:3b"
                 "openai" -> "gpt-4o-mini"
                 "groq" -> "llama-3.3-70b-versatile"
-                "openrouter" -> "google/gemini-2.5-flash"
+                "openrouter" -> "google/gemini-3.8-flash"
                 else -> "gpt-4o-mini"
             }
             val url = prefs.str("ai_url_$provider", defaultUrl)
