@@ -254,9 +254,15 @@ object Engine {
             return
         }
         val decision = AiBrain.decide(
-            http, prefs.globalGet("deepseek"), symbol, tick.bid, tick.ask,
+            http, prefs, symbol, tick.bid, tick.ask,
             state.value.equity, h1, d1, cfg.conf
-        )
+        ) { provider, input, output, total ->
+            prefs.put("ai_usage_provider", provider)
+            prefs.put("ai_usage_input", (prefs.int("ai_usage_input", 0) + input).toString())
+            prefs.put("ai_usage_output", (prefs.int("ai_usage_output", 0) + output).toString())
+            prefs.put("ai_usage_total", (prefs.int("ai_usage_total", 0) + total).toString())
+            log("AI usage [$provider]: input=$input output=$output total=$total")
+        }
         state.update {
             it.copy(lastDecision = "$symbol ${decision.signal} (${decision.confidence}) ${decision.logic}")
         }
