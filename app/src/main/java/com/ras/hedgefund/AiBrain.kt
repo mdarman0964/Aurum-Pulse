@@ -168,7 +168,11 @@ Return your decision as raw JSON only.""".trim()
                 else -> "gpt-4o-mini"
             }
             val url = prefs.str("ai_url_$provider", defaultUrl)
-            val model = prefs.str("ai_model_$provider", modelDefault)
+            val savedModel = prefs.str("ai_model_$provider", modelDefault)
+            val model = if (provider == "gemini" && savedModel == "gemini-2.5-flash") {
+                prefs.put("ai_model_gemini", "gemini-3.8-flash")
+                "gemini-3.8-flash"
+            } else savedModel
             try {
                 val reply = callProvider(http, provider, key, model, url, prompt)
                 onUsage(provider, reply.input, reply.output, reply.total)
