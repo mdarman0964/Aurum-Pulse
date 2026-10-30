@@ -151,7 +151,7 @@ fun SettingsScreen() {
         var apiKey by remember { mutableStateOf(p.profileGet("apikey")) }
         var priv by remember { mutableStateOf("") }
         var provider by remember { mutableStateOf(p.str("ai_provider", "gemini")) }
-        var model by remember { mutableStateOf(p.str("ai_model_${p.str("ai_provider", "gemini")}", "gemini-2.5-flash")) }
+        var model by remember { mutableStateOf(p.str("ai_model_${p.str("ai_provider", "gemini")}", "gemini-3.8-flash")) }
         var aiUrl by remember { mutableStateOf(p.str("ai_url_${p.str("ai_provider", "gemini")}", "https://generativelanguage.googleapis.com")) }
         var aiKey by remember { mutableStateOf(p.globalGet("ai_key_${p.str("ai_provider", "gemini")}")) }
         var fallback by remember { mutableStateOf(p.str("ai_fallback", "none")) }
@@ -179,8 +179,8 @@ fun SettingsScreen() {
             Field("Primary provider (gemini / deepseek / openai / claude / groq / openrouter / ollama)", provider) {
                 provider = it.trim().lowercase()
                 model = p.str("ai_model_${provider}", when(provider) {
-                    "gemini" -> "gemini-2.5-flash"; "deepseek" -> "deepseek-chat"; "claude" -> "claude-3-5-haiku-latest"
-                    "ollama" -> "qwen2.5:3b"; "groq" -> "llama-3.3-70b-versatile"; "openrouter" -> "google/gemini-2.5-flash"
+                    "gemini" -> "gemini-3.8-flash"; "deepseek" -> "deepseek-chat"; "claude" -> "claude-3-5-haiku-latest"
+                    "ollama" -> "qwen2.5:3b"; "groq" -> "llama-3.3-70b-versatile"; "openrouter" -> "google/gemini-3.8-flash"
                     else -> "gpt-4o-mini"
                 })
                 aiUrl = p.str("ai_url_${provider}", when(provider) {
