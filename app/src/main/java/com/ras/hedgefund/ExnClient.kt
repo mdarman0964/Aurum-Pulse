@@ -89,7 +89,7 @@ class ExnClient(private val c: Creds, private val http: OkHttpClient) {
         val first = try { parse(call("GET",host(),path,q + mapOf("from" to now.toString(),"count" to (-n).toString()))) } catch (_: ApiException) { emptyList() }
         if (first.size >= minOf(n,50)) return first.takeLast(n)
         val sec = TF_SECONDS[tf] ?: 3600L
-        return parse(call("GET",host(),path,q + mapOf("from" to now.minusSeconds((sec*n*1.5).toLong()).toString(),"to" to now.plusSeconds(sec).toString())).takeLast(n)
+        return parse(call("GET",host(),path,q + mapOf("from" to now.minusSeconds((sec*n*1.5).toLong()).toString(),"to" to now.plusSeconds(sec).toString()))).takeLast(n)
     }
     private fun newIdem() = "hf-" + UUID.randomUUID()
     fun openPosition(inst: String,side: String,volume: String,sl: String,tp: String): String {
