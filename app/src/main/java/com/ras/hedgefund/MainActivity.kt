@@ -151,7 +151,7 @@ fun SettingsScreen() {
         var apiKey by remember { mutableStateOf(p.profileGet("apikey")) }
         var priv by remember { mutableStateOf("") }
         var provider by remember { mutableStateOf(p.str("ai_provider", "gemini")) }
-        var model by remember { mutableStateOf(p.str("ai_model_${p.str("ai_provider", "gemini")}", "gemini-3.8-flash")) }
+        var model by remember { mutableStateOf(p.str("ai_model_${p.str("ai_provider", "gemini")}", "gemini-3.8-flash").let { if (it == "gemini-2.5-flash") "gemini-3.8-flash" else it }) }
         var aiUrl by remember { mutableStateOf(p.str("ai_url_${p.str("ai_provider", "gemini")}", "https://generativelanguage.googleapis.com")) }
         var aiKey by remember { mutableStateOf(p.globalGet("ai_key_${p.str("ai_provider", "gemini")}")) }
         var fallback by remember { mutableStateOf(p.str("ai_fallback", "none")) }
