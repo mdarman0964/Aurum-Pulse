@@ -150,7 +150,12 @@ fun SettingsScreen() {
         var acc by remember { mutableStateOf(p.profileGet("account")) }
         var apiKey by remember { mutableStateOf(p.profileGet("apikey")) }
         var priv by remember { mutableStateOf("") }
-        var ds by remember { mutableStateOf("") }
+        var provider by remember { mutableStateOf(p.str("ai_provider", "gemini")) }
+        var model by remember { mutableStateOf(p.str("ai_model_${p.str("ai_provider", "gemini")}", "gemini-2.5-flash")) }
+        var aiUrl by remember { mutableStateOf(p.str("ai_url_${p.str("ai_provider", "gemini")}", "https://generativelanguage.googleapis.com")) }
+        var aiKey by remember { mutableStateOf(p.globalGet("ai_key_${p.str("ai_provider", "gemini")}")) }
+        var fallback by remember { mutableStateOf(p.str("ai_fallback", "none")) }
+        var fallbackKey by remember { mutableStateOf(p.globalGet("ai_key_${p.str("ai_fallback", "none")}")) }
         var inst by remember { mutableStateOf(p.str("instruments", "XAUUSD")) }
         var risk by remember { mutableStateOf(p.str("risk", "1.0")) }
         var interval by remember { mutableStateOf(p.str("interval", "30")) }
@@ -160,18 +165,51 @@ fun SettingsScreen() {
         var maxpos by remember { mutableStateOf(p.str("maxpos", "0")) }
         var tickage by remember { mutableStateOf(p.str("tickage", "120")) }
         val hasPriv = p.profileGet("privkey").isNotBlank()
-        val hasDs = p.globalGet("deepseek").isNotBlank()
+        val providerOptions = "gemini,deepseek,openai,claude,groq,openrouter,ollama"
+        val inputTokens = p.int("ai_usage_input", 0)
+        val outputTokens = p.int("ai_usage_output", 0)
+        val totalTokens = p.int("ai_usage_total", 0)
 
         Column(
             Modifier.padding(16.dp).verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text("Editing: ${if (s.live) "LIVE" else "DEMO"} credentials", style = MaterialTheme.typography.titleMedium)
+            Text("AI Provider & API", style = MaterialTheme.typography.titleLarge)
+            Text("Supported: $providerOptions", fontSize = 11.sp)
+            Field("Primary provider (gemini / deepseek / openai / claude / groq / openrouter / ollama)", provider) {
+                provider = it.trim().lowercase()
+                model = p.str("ai_model_${provider}", when(provider) {
+                    "gemini" -> "gemini-2.5-flash"; "deepseek" -> "deepseek-chat"; "claude" -> "claude-3-5-haiku-latest"
+                    "ollama" -> "qwen2.5:3b"; "groq" -> "llama-3.3-70b-versatile"; "openrouter" -> "google/gemini-2.5-flash"
+                    else -> "gpt-4o-mini"
+                })
+                aiUrl = p.str("ai_url_${provider}", when(provider) {
+                    "gemini" -> "https://generativelanguage.googleapis.com"; "deepseek" -> "https://api.deepseek.com"
+                    "claude" -> "https://api.anthropic.com"; "ollama" -> "http://127.0.0.1:11434"
+                    "groq" -> "https://api.groq.com/openai/v1"; "openrouter" -> "https://openrouter.ai/api/v1"
+                    else -> "https://api.openai.com/v1"
+                })
+                aiKey = p.globalGet("ai_key_${provider}")
+            }
+            Field("Model name", model) { model = it }
+            Field("API URL / Base URL (editable)", aiUrl) { aiUrl = it }
+            Field("Selected provider API key", aiKey, secret = true) { aiKey = it }
+            Field("Fallback provider (none or provider name)", fallback) {
+                fallback = it.trim().lowercase()
+                fallbackKey = p.globalGet("ai_key_${fallback}")
+            }
+            Field("Fallback provider API key", fallbackKey, secret = true) { fallbackKey = it }
+            Text("Token usage (reported by provider)", style = MaterialTheme.typography.titleMedium)
+            Text("Input: $inputTokens   Output: $outputTokens   Total: $totalTokens", fontSize = 13.sp)
+            Text("Latest provider: ${p.str("ai_usage_provider", "-")}", fontSize = 12.sp)
+
+            Text("Exness account", style = MaterialTheme.typography.titleMedium)
+            Text("Editing: ${if (s.live) "LIVE" else "DEMO"} credentials", style = MaterialTheme.typography.bodyMedium)
             Field("Gateway host (Key Management > DNS widget)", gw) { gw = it }
             Field("Account ID", acc) { acc = it }
             Field("API key (exnsk_...)", apiKey) { apiKey = it }
             Field(if (hasPriv) "Private key (saved - leave blank to keep)" else "Private key (PEM / hex / base64)", priv, secret = true) { priv = it }
-            Field(if (hasDs) "DeepSeek API key (saved - leave blank to keep)" else "DeepSeek API key", ds, secret = true) { ds = it }
+
             Text("Strategy & risk", style = MaterialTheme.typography.titleMedium)
             Field("Instruments (comma separated)", inst) { inst = it }
             Field("Risk % per trade", risk) { risk = it }
@@ -183,19 +221,27 @@ fun SettingsScreen() {
             Field("Max tick age (seconds)", tickage) { tickage = it }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = {
+                    val primary = provider.trim().lowercase()
+                    val backup = fallback.trim().lowercase()
+                    p.put("ai_provider", primary)
+                    p.put("ai_model_${primary}", model.trim())
+                    p.put("ai_url_${primary}", aiUrl.trim())
+                    if (aiKey.isNotBlank()) p.globalPut("ai_key_${primary}", aiKey.trim())
+                    p.put("ai_fallback", if (backup.isBlank()) "none" else backup)
+                    if (backup != "none" && fallbackKey.isNotBlank()) p.globalPut("ai_key_${backup}", fallbackKey.trim())
                     p.profilePut("gateway", gw.trim()); p.profilePut("account", acc.trim()); p.profilePut("apikey", apiKey.trim())
                     if (priv.isNotBlank()) {
                         try { ExnAuth.parseSeed(priv); p.profilePut("privkey", priv); priv = "" }
                         catch (e: Exception) { Engine.log("Private key rejected: ${e.message}") }
                     }
-                    if (ds.isNotBlank()) { p.globalPut("deepseek", ds.trim()); ds = "" }
                     p.put("instruments", inst); p.put("risk", risk); p.put("interval", interval); p.put("conf", conf)
                     p.put("maxdd", maxdd); p.put("spreadmult", spread); p.put("maxpos", maxpos); p.put("tickage", tickage)
-                    Engine.log("Settings saved")
+                    Engine.log("AI provider settings saved: $primary; fallback=$backup")
                 }) { Text("Save") }
-                OutlinedButton(onClick = { Engine.testConnection() }) { Text("Test connection") }
+                OutlinedButton(onClick = { Engine.testConnection() }) { Text("Test Exness") }
             }
-            Text("Results of Test connection appear in the Log tab.", fontSize = 12.sp)
+            Text("Provider API key is stored encrypted on this device. Restart the bot to apply settings.", fontSize = 12.sp)
+            Text("Exness connection test results appear in the Log tab.", fontSize = 12.sp)
         }
     }
 }
